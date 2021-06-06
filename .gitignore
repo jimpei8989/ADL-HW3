@@ -13,7 +13,9 @@ __pycache__/
 !/dataset/.gitempty
 
 /checkpoints/
+/models/
+/runs
 
-/tmp/
-/.vscode/
-*.swp
+/lib
+
+.vscode
