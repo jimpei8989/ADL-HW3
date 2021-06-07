@@ -16,6 +16,7 @@ function download() {
     fi
 }
 
+mkdir -p $LOCAL_MODEL_DIR
 for url in ${REMOTE_URLs[@]}; do
     download ${url}
     if [[ $? -eq 0 ]]; then
