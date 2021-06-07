@@ -10,8 +10,26 @@
 - Python `3.9.4`
 - Requirements: please refer to [requirements.txt](requirements.txt)
     - Note that I installed transformers directly from GitHub, following the guide in slide.
+    - And the tw_rouge is installed from <https://github.com/ntu-adl-ta/ADL21-HW3>
 - Virtual environment using `pyenv`
 - CPU: AMD Ryzen 7 3700X
 - GPU: NVIDIA GeForce RTX 2070 Super
 
 ## Reproduce My Best Model
+```bash
+python3 src/train.py \
+    --name FINAL \
+    --learning_rate 1e-4 --weight_decay 1e-5 --num_epochs 20 \
+    --train_batch_size 2 --eval_batch_size 4
+```
+
+## Run evaluation
+- To download the latest model
+    ```bash
+    bash download.sh
+    ```
+
+- To run evaluation
+    ```bash
+    bash run.sh DATASET_INPUT_JSONL PREDICTION_OUTPUT_JSONL
+    ```
