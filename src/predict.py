@@ -1,5 +1,6 @@
 import os
 import json
+import concurrent.futures
 
 # Make Tensorflow less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -32,13 +33,18 @@ def main(args):
         tokenizer_return_tensors="pt",
         include_id=True,
     )
-    dataloader = DataLoader(dataset, batch_size=args.predict_batch_size)
+    dataloader = DataLoader(
+        dataset, batch_size=args.predict_batch_size, num_workers=args.num_workers
+    )
 
     model.to(args.device)
 
     predictions = []
-    for i, batch in tqdmm(
-        enumerate(dataloader), desc="Predicting", total=len(dataset) // args.predict_batch_size
+    for batch in tqdmm(
+        dataloader,
+        desc="Predicting",
+        total=(len(dataset) - 1) // args.predict_batch_size + 1,
+        leave=True,
     ):
         with torch.no_grad():
             outputs = model.generate(
@@ -49,9 +55,19 @@ def main(args):
                 eos_token_id=tokenizer.eos_token_id,
                 **args.gen_kwargs,
             ).cpu()
+            # batch_outputs.append(outputs)
+            # ids.extend(list(batch["id"]))
         output_sequences = tokenizer.batch_decode(outputs, skip_special_tokens=True)
         for output_seq, ID in zip(output_sequences, batch["id"]):
             predictions.append({"title": output_seq, "id": ID})
+
+    # def decode(batch_output):
+    #     return tokenizer.batch_decode(batch_output, skip_special_tokens=True)
+
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     decoded = sum(executor.map(decode, batch_outputs), [])
+    #     for p, i in zip(decoded, ids):
+    #         predictions.append({"title": p, "id": i})
 
     with open(args.prediction_output_path, "w") as f:
         for pred in predictions:
@@ -68,14 +84,10 @@ def parse_arguments():
 
     parser.add_argument("--predict_batch_size", type=int, default=1)
     parser.add_argument("--no_cuda", dest="cuda", action="store_false")
-    parser.add_argument("--no_fp16", dest="fp16", action="store_false")
     parser.add_argument("--no_compute_rouge", dest="compute_rouge", action="store_false")
 
     parser.add_argument("--seed", type=int, default=0x06902029)
-    parser.add_argument("--num_workers", type=int, default=4)
-
-    parser.add_argument("--do_eval", action="store_true")
-    parser.add_argument("--do_predict", action="store_true")
+    parser.add_argument("--num_workers", type=int, default=0)
 
     parser.add_argument("--use_sample", dest="do_sample", action="store_true")
     parser.add_argument("--num_beams", default=1, type=int)
