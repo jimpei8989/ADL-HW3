@@ -3,7 +3,6 @@ import os
 # Make Tensorflow less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
-
 from argparse import ArgumentParser
 from datetime import datetime
 from pathlib import Path
@@ -16,12 +15,16 @@ from models.utils import load_model_and_tokenizer
 from metrics.rouge_score import RougeScore
 
 from utils import disable_tensorflow_gpu
+from utils.io import json_dump
 
 # Disable GPU for Tensorflow
 disable_tensorflow_gpu()
 
 
 def main(args):
+    args.checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    json_dump(vars(args), args.checkpoint_dir / "args.json")
+
     set_seed(args.seed)
 
     model, tokenizer = load_model_and_tokenizer("models/mt5-small")
@@ -33,19 +36,21 @@ def main(args):
         output_dir=args.checkpoint_dir,
         overwrite_output_dir=True,
         seed=args.seed,
-        do_train=args.do_train,
-        do_eval=args.do_eval,
         evaluation_strategy="steps",
         fp16=args.fp16,
         num_train_epochs=args.num_epochs,
+        adafactor=args.use_adafactor,
+        learning_rate=args.learning_rate,
+        weight_decay=args.weight_decay,
         per_device_train_batch_size=args.train_batch_size,
         per_device_eval_batch_size=args.eval_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         predict_with_generate=True,
         dataloader_num_workers=args.num_workers,
-        logging_steps=256,
+        logging_steps=512 // args.train_batch_size,
         logging_dir=args.tb_log_dir,
-        eval_steps=1024,
+        eval_steps=2048 // args.train_batch_size,
+        save_steps=2048 // args.train_batch_size,
     )
 
     compute_metrics = None if not args.compute_rouge else RougeScore(tokenizer)
@@ -72,6 +77,9 @@ def parse_arguments():
     parser.add_argument("--do_eval", action="store_true")
 
     # Trainer
+    parser.add_argument("--use_adafactor", action="store_true")
+    parser.add_argument("--learning_rate", type=float, default=5e-5)
+    parser.add_argument("--weight_decay", type=float, default=0)
     parser.add_argument("--num_epochs", type=int, default=5)
     parser.add_argument("--train_batch_size", type=int, default=2)
     parser.add_argument("--eval_batch_size", type=int, default=4)

@@ -1,0 +1,5 @@
+[flake8]
+per-file-ignores =
+    src/train.py: E402
+    src/predict.py: E402
+    scripts/eval.py: E402

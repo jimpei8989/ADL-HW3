@@ -9,13 +9,12 @@ __pycache__/
 .python-version
 
 # Project layout
-/dataset/*
-!/dataset/.gitempty
-
-/checkpoints/
-/models/
-/runs
-
 /lib
+
+/dataset
+/checkpoints
+/predictions
+/models
+/runs
 
 .vscode
